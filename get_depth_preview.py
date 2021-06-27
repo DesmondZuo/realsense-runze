@@ -11,6 +11,17 @@ pipeline_profile = config.resolve(pipeline_wrapper)
 device = pipeline_profile.get_device()
 device_product_line = str(device.get_info(rs.camera_info.product_line))
 
+sensor = pipeline_profile.get_device().query_sensors()[0]
+
+sensor.set_option(rs.option.laser_power, 100)
+sensor.set_option(rs.option.confidence_threshold, 1)
+sensor.set_option(rs.option.min_distance, 0)
+sensor.set_option(rs.option.enable_max_usable_range, 0)
+sensor.set_option(rs.option.receiver_gain, 18)
+sensor.set_option(rs.option.post_processing_sharpening, 3)
+sensor.set_option(rs.option.pre_processing_sharpening, 5)
+sensor.set_option(rs.option.noise_filtering, 6)
+
 config.enable_stream(rs.stream.depth, 1024, 768, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
 
@@ -31,9 +42,8 @@ try:
 
         depth_image = np.dstack((depth_image, depth_image, depth_image))
 
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.06), cv2.COLORMAP_JET)
 
-        #cv2.namedWindow('depth_frames', cv2.WINDOW_NORMAL)
         cv2.imshow('depth_frames', depth_colormap)
 
         key = cv2.waitKey(1)
