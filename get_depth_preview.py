@@ -23,28 +23,36 @@ sensor.set_option(rs.option.pre_processing_sharpening, 5)
 sensor.set_option(rs.option.noise_filtering, 6)
 
 config.enable_stream(rs.stream.depth, 1024, 768, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
 
 # Start streaming
 profile = pipeline.start(config)
 
-align_to = rs.stream.color
-align = rs.align(align_to)
+decimation_filter = rs.decimation_filter()
+spatial_filter = rs.spatial_filter()
+temporal_filter = rs.temporal_filter()
 
 try:
     while True:
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
 
-        aligned_frames = align.process(frames)
+        depth_frames = frames.get_depth_frame()
 
-        depth_image = np.asanyarray(aligned_frames.get_depth_frame().get_data())
+        depth_frames = decimation_filter.process(depth_frames)
+        depth_frames = spatial_filter.process(depth_frames)
+        depth_frames = temporal_filter.process(depth_frames)
+
+        depth_image = np.asanyarray(depth_frames.get_data(), dtype=float)
+
+        print(depth_image.shape)
+
+        normalize = 10000
+
+        depth_image = depth_image / normalize
 
         depth_image = np.dstack((depth_image, depth_image, depth_image))
 
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.06), cv2.COLORMAP_JET)
-
-        cv2.imshow('depth_frames', depth_colormap)
+        cv2.imshow('depth_frames', depth_image)
 
         key = cv2.waitKey(1)
         # Press esc or 'q' to close the image window
